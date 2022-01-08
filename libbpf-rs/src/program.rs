@@ -36,6 +36,12 @@ impl OpenProgram {
             libbpf_sys::bpf_program__set_ifindex(self.ptr, idx);
         }
     }
+
+    /// Get program section name
+    pub fn get_section_name(&self) -> Result<String> {
+        let section = unsafe { libbpf_sys::bpf_program__section_name(self.ptr) };
+        util::c_ptr_to_string(section)
+    }
 }
 
 /// Type of a [`Program`]. Maps to `enum bpf_prog_type` in kernel uapi.
