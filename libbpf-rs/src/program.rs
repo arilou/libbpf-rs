@@ -38,7 +38,7 @@ impl OpenProgram {
     }
 
     /// Get program section name
-    pub fn get_section_name(&self) -> Result<String> {
+    pub fn section_name(&self) -> Result<String> {
         let section = unsafe { libbpf_sys::bpf_program__section_name(self.ptr) };
         util::c_ptr_to_string(section)
     }
