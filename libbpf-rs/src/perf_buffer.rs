@@ -3,6 +3,7 @@ use std::boxed::Box;
 use std::fmt::Debug;
 use std::fmt::Formatter;
 use std::fmt::Result as FmtResult;
+use std::ptr;
 use std::slice;
 use std::time::Duration;
 
@@ -217,6 +218,31 @@ impl<'b> PerfBuffer<'b> {
         let ret =
             unsafe { libbpf_sys::perf_buffer__buffer_fd(self.ptr, buf_idx as libbpf_sys::size_t) };
         util::parse_ret_i32(ret)
+    }
+
+    /// Get a mutable access to the underlying per-cpu ring buffer data, this API can be used
+    /// to implement a different draining mechanisim for the perf buffer data.
+    ///
+    /// Notice: The API will return a mutable reference to the same memory region in case
+    ///         it's called more than once with the same index, this due to it's nature.
+    pub fn buffer(&self, buf_idx: usize) -> Result<&mut [u8]> {
+        let mut buffer_data_ptr: *mut c_void = ptr::null_mut();
+        let mut buffer_size: usize = 0;
+        let ret = unsafe {
+            libbpf_sys::perf_buffer__buffer(
+                self.ptr,
+                buf_idx as i32,
+                ptr::addr_of_mut!(buffer_data_ptr) as *mut *mut c_void,
+                ptr::addr_of_mut!(buffer_size) as *mut libbpf_sys::size_t,
+            )
+        };
+        util::parse_ret(ret)?;
+        unsafe {
+            Ok(std::slice::from_raw_parts_mut(
+                buffer_data_ptr as *mut u8,
+                buffer_size,
+            ))
+        }
     }
 }
 
